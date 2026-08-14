@@ -11,6 +11,7 @@ Checks & Formatting Rules:
       - Max 2 consecutive blank lines anywhere (no 3+ empty lines)
   - Duplicate domain entries across sections (case-insensitive)
   - Domain syntax validity (lowercase, valid hostname syntax)
+  - Lowercase parenthesized main domains in comments (e.g. // WhatsApp (whatsapp.com))
   - Entity / Company grouping in BRANDED / PLATFORM OWNED sections:
       - Groups are sorted alphabetically by Company/Entity Name (e.g. Amazon, Apple, Microsoft)
       - Short domains within each company group are sorted alphabetically (e.g. a.co, amzn.to)
@@ -34,9 +35,22 @@ COMPANY_COMMENT_RE = re.compile(r"^//\s*([^()\n]+)(?:\s*\(([^()\n]+)\))?")
 LIST_FILE = Path(__file__).parent / "list.txt"
 
 
+def normalize_comment(comment: str) -> str:
+    """
+    Normalizes parenthesized domain in company comments to lowercase.
+    Example: '// WhatsApp (WhatsApp.com)' -> '// WhatsApp (whatsapp.com)'
+    """
+    match = COMPANY_COMMENT_RE.match(comment)
+    if match and match.group(2):
+        company_name = match.group(1).strip()
+        main_domain = match.group(2).strip().lower()
+        return f"// {company_name} ({main_domain})"
+    return comment
+
+
 class EntityGroup:
     def __init__(self, comments: list[str] = None):
-        self.comments = list(comments) if comments else []
+        self.comments = [normalize_comment(c) for c in comments] if comments else []
         self.domains = []
 
     @property
@@ -140,7 +154,6 @@ def build_formatted_content(sections: list[Section]) -> str:
         output.append("\n")
 
     result = "".join(output)
-    # Ensure standard 2 newlines between sections, 1 newline between entry blocks
     result = re.sub(r"\n{4,}", "\n\n\n", result)
     result = result.strip() + "\n"
     return result
@@ -158,13 +171,11 @@ def check_file(filepath: Path) -> tuple[list[str], list[str]]:
 
     lines = content.splitlines()
 
-    # Check Windows CRLF
     if "\r\n" in content:
         warnings.append("Windows CRLF line endings detected. Use LF.")
 
-    # Check trailing whitespace & consecutive blank lines
     consecutive_blank = 0
-    all_domains = {}  # lower_domain -> line_num
+    all_domains = {}
 
     for idx, line in enumerate(lines):
         line_num = idx + 1
@@ -179,10 +190,18 @@ def check_file(filepath: Path) -> tuple[list[str], list[str]]:
         else:
             consecutive_blank = 0
 
-        if not stripped or stripped.startswith("//"):
+        if stripped.startswith("//"):
+            # Check comment for parenthesized domains that contain uppercase letters
+            match = COMPANY_COMMENT_RE.match(stripped)
+            if match and match.group(2):
+                main_domain = match.group(2).strip()
+                if main_domain != main_domain.lower():
+                    errors.append(
+                        f"Line {line_num}: Parenthesized domain '{main_domain}' in comment must be lowercase ('{main_domain.lower()}')."
+                    )
             continue
 
-        if SECTION_HEADER_RE.match(stripped):
+        if not stripped or SECTION_HEADER_RE.match(stripped):
             continue
 
         domain = stripped
@@ -199,7 +218,6 @@ def check_file(filepath: Path) -> tuple[list[str], list[str]]:
         else:
             all_domains[lower_domain] = line_num
 
-    # Check structural parsing & spacing consistency
     sections = parse_structure(filepath)
 
     for section in sections:
@@ -219,10 +237,9 @@ def check_file(filepath: Path) -> tuple[list[str], list[str]]:
                 group_label = group.comments[0] if group.comments else group.domains[0]
                 errors.append(f"Section '{section.name}' ({group_label}): Short domains within group are not sorted alphabetically.")
 
-    # Compare actual content with canonical formatted content to enforce exact spacing
     canonical = build_formatted_content(sections)
     if content != canonical:
-        errors.append("File formatting and line spacing does not match canonical style (e.g. missing blank lines between entries or extra spacing).")
+        errors.append("File formatting, comments, or line spacing does not match canonical style.")
 
     return errors, warnings
 
