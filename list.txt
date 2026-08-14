@@ -1,0 +1,67 @@
+// === START PUBLIC ===
+
+// General-purpose URL shorteners / link services.
+// Fallback for legitimate shorteners that don't have
+// a stronger platform/branded relationship.
+
+bit.ly
+buff.ly
+dub.sh
+kutt.it
+ow.ly
+rebrand.ly
+short.io
+tiny.cc
+tinyurl.com
+
+
+// === START BRANDED ===
+
+// Branded short domains associated with a specific
+// established company/organization.
+
+// Amazon (amazon.com)
+a.co
+amzn.to
+
+// ESPN (espn.com)
+es.pn
+
+// Microsoft (microsoft.com)
+aka.ms
+
+// The New York Times (nytimes.com)
+nyti.ms
+
+
+// === START PLATFORM OWNED ===
+
+// Native short/redirect domains belonging to major
+// internet platforms.
+
+// Facebook (facebook.com)
+fb.me
+
+// LinkedIn (linkedin.com)
+lnkd.in
+
+// Pinterest (pinterest.com)
+pin.it
+
+// Reddit (reddit.com)
+redd.it
+
+// X / Twitter (x.com)
+t.co
+
+// YouTube (youtube.com)
+youtu.be
+
+
+// === START DEFUNCT ===
+
+// Formerly legitimate short/redirect services that
+// are no longer actively operating.
+
+// Google (google.com)
+goo.gl
